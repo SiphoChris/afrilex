@@ -7,12 +7,13 @@ interface HeroSectionProps {
   selectedLetter: string;
 }
 
-// currentLang, currentMode, 
 
-function HeroSection({ 
-  
+
+function HeroSection({
+  currentLang,
+  currentMode,
   onLetterSelect,
-  selectedLetter 
+  selectedLetter
 }: HeroSectionProps) {
   return (
     <header className="flex flex-col items-center justify-center gap-y-12 mt-26">
@@ -23,15 +24,15 @@ function HeroSection({
         <p className="text-lg text-gray-700 font-semibold">
           Never be lost for words. Search the AfriLex Dictionaries and find the word you are looking for.
         </p>
-        {/* <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600">
           Current: {currentLang.toUpperCase()} - {currentMode} mode
-        </div> */}
+        </div>
       </div>
       <div>
-        <AlphabetPagination 
-          onLetterSelect={onLetterSelect} 
+        <AlphabetPagination
+          onLetterSelect={onLetterSelect}
           selectedLetter={selectedLetter} // Pass the selected letter
-        />  
+        />
       </div>
     </header>
   );
