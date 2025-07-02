@@ -20,7 +20,7 @@ function AlphabetPagination({
           size="sm"
           onClick={() => onLetterSelect(letter)}
           className={cn(
-            "w-10 h-10 transition-colors duration-200",
+            "w-10 h-10 transition-colors duration-200 hover:cursor-pointer",
             selectedLetter === letter
               ? "bg-amber-600 hover:bg-amber-700 text-white shadow-md"
               : "hover:bg-amber-100 text-gray-800 border-gray-200"

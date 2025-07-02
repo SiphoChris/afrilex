@@ -47,7 +47,7 @@ function Main({ lang, mode, searchWord, selectedLetter }: MainProps) {
       <div className="mb-8">
         {getResultsTitle()}
         <p className="text-sm text-gray-600 mt-1">
-          Showing {filteredWords.length} words in {mode} mode
+          Showing {filteredWords.length} words
         </p>
       </div>
       

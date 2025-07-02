@@ -102,7 +102,7 @@ function LanguageSelectionModal({ isOpen, onLanguageSelect }: LanguageSelectionM
           <Button 
             onClick={handleConfirm} 
             disabled={!selectedLang}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white hover:cursor-pointer"
           >
             Start Exploring
           </Button>

@@ -3,47 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Volume2 } from "lucide-react";
 import Link from "next/link";
+import {wordData} from "@/types/wordata"
 
-interface WordData {
-  id: string;
-  word: string;
-  language_code: string;
-  translations?: {
-    content: string[];
-  };
-  grammar?: {
-    pos: string;
-  };
-  phonology?: {
-    pronunciation_url?: string;
-    syllables?: string[];
-  };
-  semantics?: {
-    definitions?: {
-      content: {
-        definitions: {
-          native: string[];
-          bilingual: string[];
-        };
-        examples: {
-          native: string[];
-          bilingual: string[];
-        };
-      };
-    };
-    synonyms?: {
-      content: {
-        native: string[];
-        bilingual: string[];
-      };
-    };
-  };
-}
 
 interface WordCardProps {
   lang: string;
   mode: 'native' | 'bilingual';
-  wordData: WordData;
+  wordData: wordData;
 }
 
 function WordCard({ mode, wordData }: WordCardProps) {
@@ -104,7 +70,7 @@ function WordCard({ mode, wordData }: WordCardProps) {
 }
 
 interface WordCardModeSwitcherProps {
-  wordData: WordData;
+  wordData: wordData;
   currentMode: 'native' | 'bilingual';
 }
 
