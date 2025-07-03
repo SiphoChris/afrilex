@@ -1,4 +1,6 @@
-// components/forms/DictionaryForm.tsx
+'use client'
+
+
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,7 +118,7 @@ interface DictionaryFormProps {
   isLoading?: boolean;
 }
 
-export default function DictionaryForm({ initialData, onSubmit, isLoading = false }: DictionaryFormProps) {
+function DictionaryForm({ initialData, onSubmit, isLoading = false }: DictionaryFormProps) {
   const [activeTab, setActiveTab] = useState<string>("basic");
 
   // State with explicit types
@@ -1086,3 +1088,5 @@ export default function DictionaryForm({ initialData, onSubmit, isLoading = fals
     </div>
   );
 }
+
+export default DictionaryForm

@@ -9,7 +9,6 @@ import Main from "@/components/dictionary/layout/Main";
 import Footer from "@/components/shared/Footer";
 import LanguageSelectionModal from "@/components/dictionary/LanguageSelectionModal";
 import { toast } from 'sonner';
-import DictionaryForm from "@/components/forms/DictionaryForm"
 
 interface DictionaryParams {
   lang: string;
@@ -156,7 +155,6 @@ export default function DictionaryPage() {
         selectedLetter={dictionaryParams.letter}
       />
       <Footer />
-      <DictionaryForm/>
     </>
   );
 }
