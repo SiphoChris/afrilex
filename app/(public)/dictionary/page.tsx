@@ -3,10 +3,10 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from 'usehooks-ts';
-import Nav from "@/components/layout/Nav";
-import HeroSection from "@/components/layout/HeroSection";
-import Main from "@/components/layout/Main";
-import Footer from "@/components/layout/Footer";
+import Nav from "@/components/dictionary/layout/Nav";
+import HeroSection from "@/components/dictionary/layout/HeroSection";
+import Main from "@/components/dictionary/layout/Main";
+import Footer from "@/components/shared/Footer";
 import LanguageSelectionModal from "@/components/dictionary/LanguageSelectionModal";
 import { toast } from 'sonner';
 

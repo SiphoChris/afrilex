@@ -24,9 +24,9 @@ function HeroSection({
         <p className="text-lg text-gray-700 font-semibold">
           Never be lost for words. Search the AfriLex Dictionaries and find the word you are looking for.
         </p>
-        {/* <div className="text-sm text-gray-600">
-          Current: {currentLang.toUpperCase()} - {currentMode} mode
-        </div> */}
+        <div className="text-sm text-gray-600">
+          Current: {currentLang.toUpperCase()} - {currentMode.toLocaleUpperCase()}
+        </div>
       </div>
       <div>
         <AlphabetPagination
