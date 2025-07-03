@@ -1,9 +1,9 @@
-import WordForm from "@/components/forms/WordForm"
+import WordsTable from "@/components/dashboard/WordsTable"
 
 export default function page() {
     return (
        <>
-        <WordForm />
+        <WordsTable />
        </>
     )
 }
