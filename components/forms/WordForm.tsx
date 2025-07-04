@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, KeyboardEvent } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, X, Play, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { GRAMMAR_CATEGORIES, MORPHOLOGY_PARTS, DEFAULT_UI_LABELS, DEFAULT_OTHER_PROPERTIES } from "@/lib/constants";
+import { LANGUAGES, GRAMMAR_CATEGORIES, MORPHOLOGY_PARTS, DEFAULT_UI_LABELS, DEFAULT_OTHER_PROPERTIES } from "@/lib/constants";
 
 // Default dictionary configuration
 const DEFAULT_DICTIONARY_CONFIG = {
@@ -86,10 +86,17 @@ const wordSchema = z.object({
       number: z.string(),
       plural_form: z.object({
         word: z.string().optional(),
-        example_sentences: z.object({
-          native: z.array(z.string()),
-          bilingual: z.array(z.string())
-        }).optional()
+        example_sentences: z.array(z.object({
+          pair: z.object({
+            native: z.string(),
+            bilingual: z.string(),
+            context: z.string(),
+            created_by: z.object({
+              name: z.string(),
+              role: z.string()
+            })
+          })
+        })).optional()
       }).optional()
     }),
     other_properties: z.record(z.string()).optional()
@@ -116,24 +123,17 @@ const wordSchema = z.object({
   }),
   usage: z.object({
     content: z.object({
-      sentences: z.object({
-        native: z.array(z.object({
-          sentence: z.string(),
+      sentences: z.array(z.object({
+        pair: z.object({
+          native: z.string(),
+          bilingual: z.string(),
           context: z.string(),
           created_by: z.object({
             name: z.string(),
             role: z.string()
           })
-        })),
-        bilingual: z.array(z.object({
-          sentence: z.string(),
-          context: z.string(),
-          created_by: z.object({
-            name: z.string(),
-            role: z.string()
-          })
-        }))
-      })
+        })
+      }))
     })
   }),
   collocations: z.object({
@@ -210,6 +210,7 @@ export function WordForm({
   const [activeTab, setActiveTab] = useState<string>("basic");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [currentSyllable, setCurrentSyllable] = useState("");
 
   const defaultValues: WordFormValues = {
     word: "",
@@ -233,19 +234,23 @@ export function WordForm({
     })),
     phonology: {
       pronunciation_url: "",
-      syllables: [""]
+      syllables: []
     },
     grammar: {
-      pos: dictionaryConfig.language_config.grammar.pos.native[0],
+      pos: "",
       inflection: {
-        tense: dictionaryConfig.language_config.grammar.inflection.tense.native[0],
-        number: dictionaryConfig.language_config.grammar.inflection.number.native[0],
+        tense: "",
+        number: "",
         plural_form: {
           word: "",
-          example_sentences: {
-            native: [""],
-            bilingual: [""]
-          }
+          example_sentences: [{
+            pair: {
+              native: "",
+              bilingual: "",
+              context: dictionaryConfig.language_config.grammar.general.context[0],
+              created_by: { name: "", role: "admin" }
+            }
+          }]
         }
       },
       other_properties: {}
@@ -272,24 +277,14 @@ export function WordForm({
     },
     usage: {
       content: {
-        sentences: {
-          native: [{
-            sentence: "",
+        sentences: [{
+          pair: {
+            native: "",
+            bilingual: "",
             context: dictionaryConfig.language_config.grammar.general.context[0],
-            created_by: {
-              name: "",
-              role: "admin"
-            }
-          }],
-          bilingual: [{
-            sentence: "",
-            context: dictionaryConfig.language_config.grammar.general.context[0],
-            created_by: {
-              name: "",
-              role: "admin"
-            }
-          }]
-        }
+            created_by: { name: "", role: "admin" }
+          }
+        }]
       }
     },
     collocations: {
@@ -306,7 +301,7 @@ export function WordForm({
     },
     other_properties: dictionaryConfig.language_config.other_properties.map(prop => ({
       label: prop.title.native,
-      value: prop.options[0]
+      value: ""
     })),
     metadata: {
       status: "Draft",
@@ -321,7 +316,6 @@ export function WordForm({
     resolver: zodResolver(wordSchema),
     defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues
   });
-
 
   const { 
     register, 
@@ -368,14 +362,9 @@ export function WordForm({
     name: "semantics.antonyms.content.bilingual"
   });
 
-  const { fields: usageNativeFields, append: appendUsageNative, remove: removeUsageNative } = useFieldArray({
+  const { fields: usageFields, append: appendUsage, remove: removeUsage } = useFieldArray({
     control,
-    name: "usage.content.sentences.native"
-  });
-
-  const { fields: usageBilingualFields, append: appendUsageBilingual, remove: removeUsageBilingual } = useFieldArray({
-    control,
-    name: "usage.content.sentences.bilingual"
+    name: "usage.content.sentences"
   });
 
   const { fields: collocationNativeFields, append: appendCollocationNative, remove: removeCollocationNative } = useFieldArray({
@@ -388,14 +377,9 @@ export function WordForm({
     name: "collocations.content.bilingual"
   });
 
-  const { fields: pluralExampleNativeFields, append: appendPluralExampleNative, remove: removePluralExampleNative } = useFieldArray({
+  const { fields: pluralExampleFields, append: appendPluralExample, remove: removePluralExample } = useFieldArray({
     control,
-    name: "grammar.inflection.plural_form.example_sentences.native"
-  });
-
-  const { fields: pluralExampleBilingualFields, append: appendPluralExampleBilingual, remove: removePluralExampleBilingual } = useFieldArray({
-    control,
-    name: "grammar.inflection.plural_form.example_sentences.bilingual"
+    name: "grammar.inflection.plural_form.example_sentences"
   });
 
   const { fields: syllableFields, append: appendSyllable, remove: removeSyllable } = useFieldArray({
@@ -424,6 +408,14 @@ export function WordForm({
       } else {
         toast.error("Please upload an audio file");
       }
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && currentSyllable.trim()) {
+      e.preventDefault();
+      appendSyllable(currentSyllable.trim());
+      setCurrentSyllable("");
     }
   };
 
@@ -649,33 +641,39 @@ export function WordForm({
 
                 <div className="space-y-4">
                   <Label>Syllables</Label>
-                  <div className="space-y-2">
-                    {syllableFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center gap-2">
-                        <Input
-                          {...register(`phonology.syllables.${index}` as const)}
-                          placeholder={`Syllable ${index + 1}`}
-                          className="flex-1"
-                        />
-                        {index > 0 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSyllable(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                  <div className="flex flex-wrap gap-2">
+                    {watch("phonology.syllables")?.map((syllable, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-2">
+                        <span>{syllable}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSyllable(index)}
+                          className="text-muted-foreground hover:text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </Badge>
                     ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={currentSyllable}
+                      onChange={(e) => setCurrentSyllable(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type syllable and press Enter"
+                    />
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => appendSyllable("")}
+                      onClick={() => {
+                        if (currentSyllable.trim()) {
+                          appendSyllable(currentSyllable.trim());
+                          setCurrentSyllable("");
+                        }
+                      }}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Syllable
+                      Add
                     </Button>
                   </div>
                 </div>
@@ -690,7 +688,7 @@ export function WordForm({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {watch("morphology").map((morph, index) => (
                     <div key={index} className="space-y-2">
-                      <Label>{morph.part}</Label>
+                      <Label>{morph.part} ({dictionaryConfig.language_config.morphology.bilingual[index]})</Label>
                       <Input
                         {...register(`morphology.${index}.content` as const)}
                         placeholder={`Enter ${morph.part}`}
@@ -781,71 +779,72 @@ export function WordForm({
 
                       <div className="space-y-2">
                         <Label>Example Sentences</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Native Examples</Label>
-                            {pluralExampleNativeFields.map((field, index) => (
-                              <div key={field.id} className="flex items-center gap-2">
-                                <Input
-                                  {...register(`grammar.inflection.plural_form.example_sentences.native.${index}` as const)}
-                                  placeholder="Example sentence"
-                                  className="flex-1"
+                        {pluralExampleFields.map((field, index) => (
+                          <div key={field.id} className="space-y-4 border p-4 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Native Example</Label>
+                                <Textarea
+                                  {...register(`grammar.inflection.plural_form.example_sentences.${index}.pair.native` as const)}
+                                  placeholder="Example sentence in native language"
+                                  rows={2}
                                 />
-                                {index > 0 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removePluralExampleNative(index)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
                               </div>
-                            ))}
+                              <div className="space-y-2">
+                                <Label>Bilingual Example</Label>
+                                <Textarea
+                                  {...register(`grammar.inflection.plural_form.example_sentences.${index}.pair.bilingual` as const)}
+                                  placeholder="Example sentence in English"
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Context</Label>
+                              <Select
+                                value={watch(`grammar.inflection.plural_form.example_sentences.${index}.pair.context`)}
+                                onValueChange={(value) => setValue(`grammar.inflection.plural_form.example_sentences.${index}.pair.context`, value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select context" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {dictionaryConfig.language_config.grammar.general.context.map(context => (
+                                    <SelectItem key={context} value={context}>
+                                      {context}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => appendPluralExampleNative("")}
+                              onClick={() => removePluralExample(index)}
+                              className="text-red-500"
                             >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Native Example
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove Example Pair
                             </Button>
                           </div>
-
-                          <div className="space-y-2">
-                            <Label>Bilingual Examples</Label>
-                            {pluralExampleBilingualFields.map((field, index) => (
-                              <div key={field.id} className="flex items-center gap-2">
-                                <Input
-                                  {...register(`grammar.inflection.plural_form.example_sentences.bilingual.${index}` as const)}
-                                  placeholder="Example sentence"
-                                  className="flex-1"
-                                />
-                                {index > 0 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removePluralExampleBilingual(index)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => appendPluralExampleBilingual("")}
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Bilingual Example
-                            </Button>
-                          </div>
-                        </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => appendPluralExample({
+                            pair: {
+                              native: "",
+                              bilingual: "",
+                              context: dictionaryConfig.language_config.grammar.general.context[0],
+                              created_by: { name: "", role: "admin" }
+                            }
+                          })}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Example Pair
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -857,7 +856,7 @@ export function WordForm({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {watch("other_properties")?.map((prop, index) => (
                         <div key={index} className="space-y-2">
-                          <Label>{prop.label}</Label>
+                          <Label>{prop.label} ({dictionaryConfig.language_config.other_properties[index].title.bilingual})</Label>
                           <Select
                             value={prop.value}
                             onValueChange={(value) => {
@@ -1124,30 +1123,33 @@ export function WordForm({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <Label>Native Example Sentences</Label>
-                    {usageNativeFields.map((field, index) => (
-                      <div key={field.id} className="space-y-2">
-                        <div className="flex items-center gap-2">
+                <div className="space-y-4">
+                  <Label>Example Sentences</Label>
+                  {usageFields.map((field, index) => (
+                    <div key={field.id} className="space-y-4 border p-4 rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Native Example</Label>
                           <Textarea
-                            {...register(`usage.content.sentences.native.${index}.sentence` as const)}
-                            placeholder="Enter example sentence in native language"
+                            {...register(`usage.content.sentences.${index}.pair.native` as const)}
+                            placeholder="Example sentence in native language"
                             rows={2}
-                            className="flex-1"
                           />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeUsageNative(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
                         </div>
+                        <div className="space-y-2">
+                          <Label>Bilingual Example</Label>
+                          <Textarea
+                            {...register(`usage.content.sentences.${index}.pair.bilingual` as const)}
+                            placeholder="Example sentence in English"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Context</Label>
                         <Select
-                          value={watch(`usage.content.sentences.native.${index}.context`)}
-                          onValueChange={(value) => setValue(`usage.content.sentences.native.${index}.context`, value)}
+                          value={watch(`usage.content.sentences.${index}.pair.context`)}
+                          onValueChange={(value) => setValue(`usage.content.sentences.${index}.pair.context`, value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select context" />
@@ -1161,71 +1163,33 @@ export function WordForm({
                           </SelectContent>
                         </Select>
                       </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendUsageNative({
-                        sentence: "",
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeUsage(index)}
+                        className="text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Example Pair
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => appendUsage({
+                      pair: {
+                        native: "",
+                        bilingual: "",
                         context: dictionaryConfig.language_config.grammar.general.context[0],
                         created_by: { name: "", role: "admin" }
-                      })}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Native Example
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label>Bilingual Example Sentences</Label>
-                    {usageBilingualFields.map((field, index) => (
-                      <div key={field.id} className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Textarea
-                            {...register(`usage.content.sentences.bilingual.${index}.sentence` as const)}
-                            placeholder="Enter example sentence in English"
-                            rows={2}
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeUsageBilingual(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <Select
-                          value={watch(`usage.content.sentences.bilingual.${index}.context`)}
-                          onValueChange={(value) => setValue(`usage.content.sentences.bilingual.${index}.context`, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select context" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {dictionaryConfig.language_config.grammar.general.context.map(context => (
-                              <SelectItem key={context} value={context}>
-                                {context}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendUsageBilingual({
-                        sentence: "",
-                        context: dictionaryConfig.language_config.grammar.general.context[0],
-                        created_by: { name: "", role: "admin" }
-                      })}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Bilingual Example
-                    </Button>
-                  </div>
+                      }
+                    })}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Example Pair
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1333,5 +1297,4 @@ export function WordForm({
   );
 }
 
-
-export default WordForm
+export default WordForm;

@@ -69,10 +69,4 @@ export const DEFAULT_OTHER_PROPERTIES = [
     options: ["sokwenzisa", "sokwenzela", "sokwenzana", "sokwenziwa", "sokwenzeka", "sokwenza"]
   }
 ];
-
-
-
-
-
-
-
+  

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import { BookMarked, Settings, Binoculars } from "lucide-react"
+import { BookMarked, Settings, Binoculars, UsersRound, BellDot, CircleUserRound } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 const navLinks = [
@@ -18,10 +18,28 @@ const navLinks = [
         icon: <BookMarked />
     },
     {
+        id: "users",
+        label: "Users",
+        href: "/dashboard/users",
+        icon: <UsersRound/>
+    },
+    {
+        id: "auditLogs",
+        label: "Audit Logs",
+        href: "/dashboard/logs",
+        icon: <BellDot />
+    },
+    {
         id: "settings",
         label: "Settings",
         href: "/dashboard/settings",
         icon: <Settings/>
+    },
+    {
+        id: "account",
+        label: "Account",
+        href: "/dashboard/acount/:id",
+        icon: <CircleUserRound/>
     }
 ] as const
 
